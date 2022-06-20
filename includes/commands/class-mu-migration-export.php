@@ -63,7 +63,7 @@ class ExportCommand extends MUMigrationBase {
 	 *
 	 *      wp mu-migration export tables output.sql
 	 *
-	 * @synopsis <outputfile> [--blog_id=<blog_id>] [--tables=<table_list>] [--non-default-tables=<table_list>]
+	 * @synopsis <outputfile> [--blog_id=<blog_id>] [--tables=<table_list>] [--non-default-tables=<table_list>] [--single-transaction] [--quick] [--lock-tables] [--all-tablespaces]
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -139,7 +139,18 @@ class ExportCommand extends MUMigrationBase {
 		}
 
 		if ( is_array( $tables ) && ! empty( $tables ) ) {
-			$export = Helpers\runcommand( 'db export', [ $filename ], [ 'tables' => implode( ',', $tables ) ] );
+			$db_export_args = [
+				'tables' => implode( ',', $tables ),
+			];
+
+			// adds support for mysqldump flags
+			foreach ( [ 'single-transaction', 'quick', 'lock-tables', 'all-tablespaces' ] as $flag ) {
+				if ( ! empty( $this->assoc_args[ $flag ] ) ) {
+					$db_export_args[] = sprintf( '--%s=%s', $flag, $this->assoc_args[ $flag ] );
+				}
+			}
+			
+			$export = Helpers\runcommand( 'db export', [ $filename ], $db_export_args );
 
 			if ( 0 === $export->return_code ) {
 				$this->success( __( 'The export is now complete', 'mu-migration' ), $verbose );
@@ -372,7 +383,7 @@ class ExportCommand extends MUMigrationBase {
 	 *
 	 *      wp mu-migration export all site.zip
 	 *
-	 * @synopsis [<zipfile>] [--blog_id=<blog_id>] [--tables=<table_list>] [--non-default-tables=<table_list>] [--plugins] [--themes] [--uploads] [--verbose]
+	 * @synopsis [<zipfile>] [--blog_id=<blog_id>] [--tables=<table_list>] [--non-default-tables=<table_list>] [--plugins] [--themes] [--uploads] [--verbose] [--single-transaction] [--quick] [--lock-tables] [--all-tablespaces]
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
